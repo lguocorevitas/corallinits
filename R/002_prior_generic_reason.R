@@ -20,12 +20,27 @@
 #' @param reason_1_category_col
 #' @param reason_2_category_col
 #' @param reason_3_category_col
-#' @param eligible_categories
+#' @param eligible_categories Numeric vector of drug_category values that define
+#'   eligible prior b/tsDMARD drugs to search for.
 #'
 #' @returns
 #' @export
 #'
 #' @examples
+#' # Step 0, find visits and drug data
+#' \dontrun{
+#' visits <- readRDS("visits_data.rds")
+#' drug <- readRDS("drugexpdetails_data.rds")
+#'
+#'
+#' # Step 1, find baseline visit with user defined cutoff days. Currently using 183 days.
+#'
+#' init_upadacitinib<- corallinits::make_drug_baseline_visit_dataset(
+#'   visits_df = visits,
+#'   drug_df = drug,
+#'   target_generic_key = "upadacitinib",
+#'   baseline_cutoff_days = 183
+#' )
 #' # step 2, find the prior generic name and the reason(s) for changing
 #' init_upadacitinib <- corallinits::add_prior_btsdmard_info(
 #'   base_visit_df = init_upadacitinib,
@@ -37,6 +52,7 @@
 #'   generic_start_date_col = generic_start_date,
 #'   eligible_categories = c(250, 390)
 #' )
+#' }
 add_prior_btsdmard_info <- function(
     base_visit_df,
     drug_df,

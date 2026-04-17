@@ -1,4 +1,7 @@
-
+# Step 3, find the first stop for initiations and the reasons for stop.
+# find the first stop and create cumulative stop indicator for all fu visits,
+# carrying first-stop date/reasons/categories only from the mapped stop visit forward
+# create cumstop indicator for all visits
 #' Title
 #'
 #' @param visit_df
@@ -18,11 +21,32 @@
 #' @returns
 #' @export
 #'
-#' #' @examples
+#' @examples
+#' # Step 0, find visits and drug data
+#' \dontrun{
+#' visits <- readRDS("visits_data.rds")
+#' drug <- readRDS("drugexpdetails_data.rds")
+#'
+#' # Step 1, find baseline visit with user defined cutoff days. Currently using 183 days.
+#'
+#' init_upadacitinib<- corallinits::make_drug_baseline_visit_dataset(
+#'   visits_df = visits,
+#'   drug_df = drug,
+#'   target_generic_key = "upadacitinib",
+#'   baseline_cutoff_days = 183
+#' )
+#' # step 2, find the prior generic name and the reason(s) for changing
+#' init_upadacitinib <- corallinits::add_prior_btsdmard_info(
+#'   base_visit_df = init_upadacitinib,
+#'   drug_df = drug,
+#'   id_col = id,
+#'   init_date_col = init_date,
+#'   drug_category_col = drug_category,
+#'   generic_key_col = generic_key,
+#'   generic_start_date_col = generic_start_date,
+#'   eligible_categories = c(250, 390)
+#' )
 #' # Step 3, find the first stop for initiations and the reasons for stop.
-#' # find the first stop and create cumulative stop indicator for all fu visits,
-#' # carrying first-stop date/reasons/categories only from the mapped stop visit forward
-#' # create cumstop indicator for all visits
 #' init_upadacitinib <- corallinits::map_stop_to_visits(
 #'   visit_df = init_upadacitinib,
 #'   drug_df = drug,
@@ -38,7 +62,7 @@
 #'   reason_3_category_col = reason_3_category,
 #'   target_generic_keys = "upadacitinib"
 #' )
-
+#' }
 map_stop_to_visits <- function(
     visit_df,
     drug_df,

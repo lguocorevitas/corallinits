@@ -1,5 +1,5 @@
 
-#' Title
+#'Title
 #'
 #' @param visit_df
 #' @param id_col
@@ -19,10 +19,60 @@
 #' @export
 #'
 #' @examples
-#' assign fu_grp when fu_days falls in the window
-#' only apply the de-duplication rule when there is more than one candidate
-#' for the same id and follow-up window
-#' use stop_date logic to choose one row among duplicate
+#' # Step 0, find visits and drug data
+#' \dontrun{
+#' visits <- readRDS("visits_data.rds")
+#' drug <- readRDS("drugexpdetails_data.rds")
+#'
+#' # Step 1, find baseline visit with user defined cutoff days. Currently using 183 days.
+#'
+#' init_upadacitinib<- corallinits::make_drug_baseline_visit_dataset(
+#'   visits_df = visits,
+#'   drug_df = drug,
+#'   target_generic_key = "upadacitinib",
+#'   baseline_cutoff_days = 183
+#' )
+#' # step 2, find the prior generic name and the reason(s) for changing
+#' init_upadacitinib <- corallinits::add_prior_btsdmard_info(
+#'   base_visit_df = init_upadacitinib,
+#'   drug_df = drug,
+#'   id_col = id,
+#'   init_date_col = init_date,
+#'   drug_category_col = drug_category,
+#'   generic_key_col = generic_key,
+#'   generic_start_date_col = generic_start_date,
+#'   eligible_categories = c(250, 390)
+#' )
+#' # Step 3, find the first stop for initiations and the reasons for stop.
+#' init_upadacitinib <- corallinits::map_stop_to_visits(
+#'   visit_df = init_upadacitinib,
+#'   drug_df = drug,
+#'   id_col = id,
+#'   visit_date_col = visitdate,
+#'   generic_key_col = generic_key,
+#'   generic_stop_date_col = generic_stop_date,
+#'   reason_1_col = reason_1,
+#'   reason_2_col = reason_2,
+#'   reason_3_col = reason_3,
+#'   reason_1_category_col = reason_1_category,
+#'   reason_2_category_col = reason_2_category,
+#'   reason_3_category_col = reason_3_category,
+#'   target_generic_keys = "upadacitinib"
+#' )
+#' # Step 4 find first switch
+#' init_upadacitinib <- corallinits::map_switch_to_visits(
+#'   visit_df = init_upadacitinib,
+#'   drug_df = drug,
+#'   id_col = id,
+#'   visit_date_col = visitdate,
+#'   first_stop_date_col = first_stop_date,
+#'   druggrp_col = druggrp,
+#'   generic_key_col = generic_key,
+#'   generic_start_date_col = generic_start_date,
+#'   drug_category_col = drug_category,
+#'   eligible_categories = c(250, 390)
+#' )
+#' # Step 5, find fu_grp
 #' init_upadacitinib <- corallinits::identify_fu_visits(
 #' visit_df = init_upadacitinib,
 #' id_col = id,
@@ -34,6 +84,7 @@
 #' fu18_window = c(458, 638),
 #' fu24_window = c(639, 819)
 #' )
+#' }
 identify_fu_visits <- function(
     visit_df,
     id_col = id,

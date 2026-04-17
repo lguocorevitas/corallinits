@@ -3,8 +3,11 @@
 # otherwise, use the previous visitdate if it is within baseline_cutoff_days before init_date
 library(dplyr)
 library(rlang)
-library(dplyr)
-library(rlang)
+library(stringr)
+library(haven)
+library(lubridate)
+library(glue)
+library(tidyverse)
 
 #' Title
 #'
@@ -28,8 +31,9 @@ library(rlang)
 #' @examples
 #'
 #' # Step 0, find visits and drug data
-#' visits <-readRDS(glue("{analytic_data}/rewrite/RA_visits_calc_{cut_date}.rds"))
-#' drug <-readRDS(glue("{analytic_data}/rewrite/RA_drugexpdetails_{cut_date}.rds"))
+#' \dontrun{
+#' visits <- readRDS("visits_data.rds")
+#' drug <- readRDS("drugexpdetails_data.rds")
 #'
 #' # Step 1, find baseline visit with user defined cutoff days. Currently using 183 days.
 #'
@@ -39,6 +43,7 @@ library(rlang)
 #'   target_generic_key = "upadacitinib",
 #'   baseline_cutoff_days = 183
 #' )
+#' }
 make_drug_baseline_visit_dataset <- function(
     visits_df,
     drug_df,
