@@ -1,9 +1,39 @@
-# It identifies, for each id, the first visit row where first_stop_date is available. 
-# It uses that row’s first_stop_date and druggrp as the current initiator stop context. 
-# It then searches drug_df for eligible switched drugs with generic_start_date 
-# on or after that first_stop_date, 
-# limited to the specified eligible_categories, 
-# and excludes drugs whose generic_key matches the current druggrp
+
+#' Title
+#'
+#' @param visit_df
+#' @param drug_df
+#' @param id_col
+#' @param visit_date_col
+#' @param first_stop_date_col
+#' @param druggrp_col
+#' @param generic_key_col
+#' @param generic_start_date_col
+#' @param drug_category_col
+#' @param eligible_categories
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+#' # It identifies, for each id, the first visit row where first_stop_date is available.
+#' # It uses that row’s first_stop_date and druggrp as the current initiator stop context.
+#' # It then searches drug_df for eligible switched drugs with generic_start_date
+#' # on or after that first_stop_date,
+#' # limited to the specified eligible_categories,
+#' # and excludes drugs whose generic_key matches the current druggrp
+#' init_upadacitinib <- corallinits::map_switch_to_visits(
+#'   visit_df = init_upadacitinib,
+#'   drug_df = drug,
+#'   id_col = id,
+#'   visit_date_col = visitdate,
+#'   first_stop_date_col = first_stop_date,
+#'   druggrp_col = druggrp,
+#'   generic_key_col = generic_key,
+#'   generic_start_date_col = generic_start_date,
+#'   drug_category_col = drug_category,
+#'   eligible_categories = c(250, 390)
+#' )
 map_switch_to_visits <- function(
     visit_df,
     drug_df,
@@ -16,7 +46,7 @@ map_switch_to_visits <- function(
     drug_category_col = drug_category,
     eligible_categories = c(250, 390)
 ) {
-  
+
   id_col <- rlang::enquo(id_col)
   visit_date_col <- rlang::enquo(visit_date_col)
   first_stop_date_col <- rlang::enquo(first_stop_date_col)
@@ -24,12 +54,12 @@ map_switch_to_visits <- function(
   generic_key_col <- rlang::enquo(generic_key_col)
   generic_start_date_col <- rlang::enquo(generic_start_date_col)
   drug_category_col <- rlang::enquo(drug_category_col)
-  
+
   visits0 <- visit_df |>
     dplyr::mutate(
       .row_id__ = dplyr::row_number()
     )
-  
+
   visits <- visits0 |>
     dplyr::mutate(
       .id__ = !!id_col,
@@ -41,7 +71,7 @@ map_switch_to_visits <- function(
       !is.na(.id__),
       !is.na(.visitdate__)
     )
-  
+
   # first row within each id where first_stop_date becomes available
   stop_info <- visits |>
     dplyr::filter(
@@ -60,7 +90,7 @@ map_switch_to_visits <- function(
         stringr::str_trim(.druggrp__)
       )
     )
-  
+
   switch_candidates <- drug_df |>
     dplyr::transmute(
       id = !!id_col,
@@ -77,7 +107,7 @@ map_switch_to_visits <- function(
       !is.na(generic_start_date),
       drug_category %in% eligible_categories
     )
-  
+
   first_switch_df <- stop_info |>
     dplyr::inner_join(
       switch_candidates,
@@ -97,7 +127,7 @@ map_switch_to_visits <- function(
       switch_start_date = generic_start_date,
       switchname = generic_key
     )
-  
+
   mapped_switch_visit <- first_switch_df |>
     dplyr::inner_join(
       visits |>
@@ -120,7 +150,7 @@ map_switch_to_visits <- function(
       switchname,
       switch_start_date
     )
-  
+
   out <- visits0 |>
     dplyr::left_join(
       mapped_switch_visit,
@@ -166,6 +196,6 @@ map_switch_to_visits <- function(
       -switchname_first,
       -switch_start_date_first
     )
-  
+
   return(out)
 }

@@ -6,6 +6,39 @@ library(rlang)
 library(dplyr)
 library(rlang)
 
+#' Title
+#'
+#' @param visits_df
+#' @param drug_df
+#' @param target_generic_key
+#' @param baseline_cutoff_days
+#' @param id_col
+#' @param visitdate_col
+#' @param indexn_col
+#' @param indexN_col
+#' @param generic_key_col
+#' @param init_generic_col
+#' @param generic_start_date_col
+#' @param assign_output
+#' @param output_env
+#'
+#' @returns
+#' @export
+#'
+#' @examples
+#'
+#' # Step 0, find visits and drug data
+#' visits <-readRDS(glue("{analytic_data}/rewrite/RA_visits_calc_{cut_date}.rds"))
+#' drug <-readRDS(glue("{analytic_data}/rewrite/RA_drugexpdetails_{cut_date}.rds"))
+#'
+#' # Step 1, find baseline visit with user defined cutoff days. Currently using 183 days.
+#'
+#' init_upadacitinib<- corallinits::make_drug_baseline_visit_dataset(
+#'   visits_df = visits,
+#'   drug_df = drug,
+#'   target_generic_key = "upadacitinib",
+#'   baseline_cutoff_days = 183
+#' )
 make_drug_baseline_visit_dataset <- function(
     visits_df,
     drug_df,
@@ -21,7 +54,7 @@ make_drug_baseline_visit_dataset <- function(
     assign_output = FALSE,
     output_env = .GlobalEnv
 ) {
-  
+
   id_col <- rlang::enquo(id_col)
   visitdate_col <- rlang::enquo(visitdate_col)
   indexn_col <- rlang::enquo(indexn_col)
@@ -29,9 +62,9 @@ make_drug_baseline_visit_dataset <- function(
   generic_key_col <- rlang::enquo(generic_key_col)
   init_generic_col <- rlang::enquo(init_generic_col)
   generic_start_date_col <- rlang::enquo(generic_start_date_col)
-  
+
   output_name <- paste0(gsub("[^A-Za-z0-9_]", "_", target_generic_key), "_base_visit")
-  
+
   visits2 <- visits_df |>
     dplyr::transmute(
       id = !!id_col,
@@ -41,7 +74,7 @@ make_drug_baseline_visit_dataset <- function(
     ) |>
     dplyr::filter(!is.na(id), !is.na(visitdate)) |>
     dplyr::distinct()
-  
+
   inits2 <- drug_df |>
     dplyr::filter(
       !!init_generic_col == 1,
@@ -57,7 +90,7 @@ make_drug_baseline_visit_dataset <- function(
     dplyr::group_by(id, generic_key) |>
     dplyr::slice_min(init_date, n = 1, with_ties = FALSE) |>
     dplyr::ungroup()
-  
+
   baseline_df <- inits2 |>
     dplyr::left_join(
       visits2 |>
@@ -102,7 +135,7 @@ make_drug_baseline_visit_dataset <- function(
       init_date,
       base_visit = visitdate
     )
-  
+
   out <- visits2 |>
     dplyr::left_join(baseline_df, by = "id") |>
     dplyr::mutate(
@@ -111,10 +144,10 @@ make_drug_baseline_visit_dataset <- function(
     dplyr::filter(!is.na(base_visit) & visitdate >= base_visit) |>
     dplyr::select(id, visitdate, init_date, base_visit, indexn, indexN, druggrp) |>
     dplyr::arrange(id, visitdate)
-  
+
   if (assign_output) {
     assign(output_name, out, envir = output_env)
   }
-  
+
   return(out)
 }

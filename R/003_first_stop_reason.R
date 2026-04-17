@@ -1,5 +1,44 @@
-# find the first stop and create cumulative stop indicator for all fu visits,
-# carrying first-stop date/reasons/categories only from the mapped stop visit forward
+
+#' Title
+#'
+#' @param visit_df
+#' @param drug_df
+#' @param id_col
+#' @param visit_date_col
+#' @param generic_key_col
+#' @param generic_stop_date_col
+#' @param reason_1_col
+#' @param reason_2_col
+#' @param reason_3_col
+#' @param reason_1_category_col
+#' @param reason_2_category_col
+#' @param reason_3_category_col
+#' @param target_generic_keys
+#'
+#' @returns
+#' @export
+#'
+#' #' @examples
+#' # Step 3, find the first stop for initiations and the reasons for stop.
+#' # find the first stop and create cumulative stop indicator for all fu visits,
+#' # carrying first-stop date/reasons/categories only from the mapped stop visit forward
+#' # create cumstop indicator for all visits
+#' init_upadacitinib <- corallinits::map_stop_to_visits(
+#'   visit_df = init_upadacitinib,
+#'   drug_df = drug,
+#'   id_col = id,
+#'   visit_date_col = visitdate,
+#'   generic_key_col = generic_key,
+#'   generic_stop_date_col = generic_stop_date,
+#'   reason_1_col = reason_1,
+#'   reason_2_col = reason_2,
+#'   reason_3_col = reason_3,
+#'   reason_1_category_col = reason_1_category,
+#'   reason_2_category_col = reason_2_category,
+#'   reason_3_category_col = reason_3_category,
+#'   target_generic_keys = "upadacitinib"
+#' )
+
 map_stop_to_visits <- function(
     visit_df,
     drug_df,
@@ -15,7 +54,7 @@ map_stop_to_visits <- function(
     reason_3_category_col = reason_3_category,
     target_generic_keys = NULL
 ) {
-  
+
   id_col <- rlang::enquo(id_col)
   visit_date_col <- rlang::enquo(visit_date_col)
   generic_key_col <- rlang::enquo(generic_key_col)
@@ -26,7 +65,7 @@ map_stop_to_visits <- function(
   reason_1_category_col <- rlang::enquo(reason_1_category_col)
   reason_2_category_col <- rlang::enquo(reason_2_category_col)
   reason_3_category_col <- rlang::enquo(reason_3_category_col)
-  
+
   # capture source value labels / variable labels from drug_df
   label_meta <- list(
     stop_reason_1 = list(
@@ -54,7 +93,7 @@ map_stop_to_visits <- function(
       label  = attr(dplyr::pull(drug_df, !!reason_3_category_col), "label", exact = TRUE)
     )
   )
-  
+
   apply_label_attrs <- function(x, meta, var_label = NULL) {
     if (!is.null(meta$labels)) {
       attr(x, "labels") <- meta$labels
@@ -66,7 +105,7 @@ map_stop_to_visits <- function(
     }
     x
   }
-  
+
   visits0 <- visit_df |>
     dplyr::mutate(.row_id__ = dplyr::row_number()) |>
     dplyr::transmute(
@@ -75,10 +114,10 @@ map_stop_to_visits <- function(
       visitdate = as.Date(!!visit_date_col),
       dplyr::across(dplyr::everything())
     )
-  
+
   visits <- visits0 |>
     dplyr::filter(!is.na(id), !is.na(visitdate))
-  
+
   stops <- drug_df |>
     dplyr::mutate(.drug_row__ = dplyr::row_number()) |>
     dplyr::transmute(
@@ -94,19 +133,19 @@ map_stop_to_visits <- function(
       stop_reason_3_category = !!reason_3_category_col
     ) |>
     dplyr::filter(!is.na(id), !is.na(generic_stop_date))
-  
+
   if (!is.null(target_generic_keys)) {
     stops <- stops |>
       dplyr::filter(generic_key %in% target_generic_keys)
   }
-  
+
   # first stop per patient for the target initiator drug
   first_stop <- stops |>
     dplyr::arrange(id, generic_stop_date, .drug_row__) |>
     dplyr::group_by(id) |>
     dplyr::slice_head(n = 1) |>
     dplyr::ungroup()
-  
+
   # map first stop date to the first visit on/after stop date
   mapped_stop_visit <- first_stop |>
     dplyr::select(id, generic_stop_date) |>
@@ -124,7 +163,7 @@ map_stop_to_visits <- function(
       visitdate,
       has_stop = 1L
     )
-  
+
   # patient-level first stop info
   first_stop_info <- first_stop |>
     dplyr::transmute(
@@ -137,7 +176,7 @@ map_stop_to_visits <- function(
       stop_reason_2_category,
       stop_reason_3_category
     )
-  
+
   out <- visits0 |>
     dplyr::left_join(mapped_stop_visit, by = c("id", "visitdate")) |>
     dplyr::mutate(
@@ -161,7 +200,7 @@ map_stop_to_visits <- function(
     ) |>
     dplyr::arrange(.row_id__) |>
     dplyr::select(-.row_id__)
-  
+
   # reapply labels after ifelse() strips attributes
   out <- out |>
     dplyr::mutate(
@@ -196,6 +235,6 @@ map_stop_to_visits <- function(
         "First stop reason 3 category for initiator, from stop visit forward"
       )
     )
-  
+
   return(out)
 }
