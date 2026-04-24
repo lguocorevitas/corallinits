@@ -4,7 +4,7 @@
 library(dplyr)
 library(rlang)
 
-# testing 
+# testing
 library(stringr)
 library(haven)
 library(lubridate)
@@ -25,9 +25,7 @@ drug <-readRDS(glue("{analytic_data}/rewrite/RA_drugexpdetails_{cut_date}.rds"))
 
 # Step 1, find baseline visit with user defined cutoff days. Currently using 183 days.
 
-source("./allinits_package/001_find_base_visit.R")
-
-init_upadacitinib<- make_drug_baseline_visit_dataset(
+init_upadacitinib<- corallinits::make_drug_baseline_visit_dataset(
   visits_df = visits,
   drug_df = drug,
   target_generic_key = "upadacitinib",
@@ -35,10 +33,8 @@ init_upadacitinib<- make_drug_baseline_visit_dataset(
 )
 
 # step 2, find the prior generic name and the reason(s) for changing
-source("./allinits_package/002_prior_generic_reason.R")
 
-# test
-init_upadacitinib <- add_prior_btsdmard_info(
+init_upadacitinib <- corallinits::add_prior_btsdmard_info(
   base_visit_df = init_upadacitinib,
   drug_df = drug,
   id_col = id,
@@ -50,11 +46,8 @@ init_upadacitinib <- add_prior_btsdmard_info(
 )
 
 # Step 3, find the first stop for initiations and the reasons for stop.
-# create cumstop indicator for all visits 
-source("./allinits_package/003_first_stop_reason.R")
 
-# test 3 
-init_upadacitinib <- map_stop_to_visits(
+init_upadacitinib <- corallinits::map_stop_to_visits(
   visit_df = init_upadacitinib,
   drug_df = drug,
   id_col = id,
@@ -70,10 +63,9 @@ init_upadacitinib <- map_stop_to_visits(
   target_generic_keys = "upadacitinib"
 )
 
-# Step 4 find first switch
-source("./allinits_package/004_first_switch.R")
-# test 4, find switched to drug and carry it forward
-init_upadacitinib <- map_switch_to_visits(
+# Step 4 find first switch and carry it forward
+
+init_upadacitinib <- corallinits::map_switch_to_visits(
   visit_df = init_upadacitinib,
   drug_df = drug,
   id_col = id,
@@ -86,10 +78,9 @@ init_upadacitinib <- map_switch_to_visits(
   eligible_categories = c(250, 390)
 )
 
-# Step 5, find fu_grp 
-source("./allinits_package/005_fu_grp.R")
-# testing FU window 
-init_upadacitinib <- identify_fu_visits(
+# Step 5, find fu_grp
+
+init_upadacitinib <- corallinits::identify_fu_visits(
   visit_df = init_upadacitinib,
   id_col = id,
   visit_date_col = visitdate,
@@ -100,19 +91,19 @@ init_upadacitinib <- identify_fu_visits(
   fu18_window = c(458, 638),
   fu24_window = c(639, 819)
 )
-# output data for QC 
+# output data for QC
 saveRDS(init_upadacitinib, file = "./allinits_package/init_upadacitinib.rds")
 write_dta(init_upadacitinib,  "./allinits_package/init_upadacitinib.dta")
 
 
 data_name <-"allinits"
 
-test_data <- init_upadacitinib 
+test_data <- init_upadacitinib
 current_data  <- glue("{analytic_data}/rewrite/RA_{data_name}_{cut_date}.rds")
 id_cols <- c("id", "druggrp", "visitdate")
 
 # running the code
-master_df <- readRDS(test_data) 
+master_df <- readRDS(test_data)
 
 using_df  <- read_dta(current_data)
 if (!"id" %in% names(using_df)) using_df <- using_df %>% mutate(id = subject_number)
@@ -127,7 +118,7 @@ res <- corcf::corcf(
 )
 
 # names(res$label_conflicts)
-# 
+#
 # res$ecode
 # if code =106 means you hit at least one type mismatch (string vs numeric, like Stata)
 
@@ -143,5 +134,5 @@ corcf::write_corcf_word(
 )
 
 
-# Step 6, Optional to other registries, 
-# add base_X and X variables needed from visits data, calculate acr and mACR 
+# Step 6, Optional to other registries,
+# add base_X and X variables needed from visits data, calculate acr and mACR
